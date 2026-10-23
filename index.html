@@ -42,6 +42,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Canvas Confetti untuk Perayaan Transaksi Selesai -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
   <style>
     body {
@@ -62,6 +65,17 @@
     }
     ::-webkit-scrollbar-thumb:hover {
       background: #94A3B8;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(45, 106, 79, 0.4); }
+      50% { transform: scale(1.02); box-shadow: 0 0 16px 2px rgba(45, 106, 79, 0.2); }
+    }
+    .card-hover-effect {
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .card-hover-effect:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.08), 0 4px 8px -4px rgba(15, 23, 42, 0.03);
     }
     @media print {
       body * {
@@ -239,12 +253,14 @@
       <!-- TOPBAR MOBILE / TABLET HEADER -->
       <header class="bg-white border-b border-slate-200/80 px-4 py-3 sm:px-6 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-3">
-          <div class="md:hidden w-9 h-9 rounded-xl bg-brand-700 text-white flex items-center justify-center text-lg">
+          <div class="md:hidden w-9 h-9 rounded-xl bg-brand-700 text-white flex items-center justify-center text-lg shadow-sm">
             <i class="fa-solid fa-store"></i>
           </div>
           <div>
-            <div class="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+            <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
               <span id="topGreeting">Selamat Datang 👋</span>
+              <span class="hidden sm:inline text-slate-300">•</span>
+              <span id="liveClock" class="hidden sm:inline font-mono text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">00:00:00</span>
             </div>
             <h2 id="topUserName" class="text-base sm:text-lg font-bold text-slate-800 leading-tight">Sarah (Kasir)</h2>
           </div>
@@ -252,13 +268,19 @@
 
         <!-- Action Items -->
         <div class="flex items-center gap-2">
-          <div id="firebaseStatusBadge" class="text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5 bg-emerald-100 text-emerald-800">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <!-- Audio Feedback Toggle Button -->
+          <button onclick="toggleAudioMute()" id="btnAudioToggle" class="p-2 sm:px-3 sm:py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1.5" title="Efek Suara Kasir">
+            <i id="audioIcon" class="fa-solid fa-volume-high text-brand-700"></i>
+            <span class="hidden sm:inline" id="audioLabel">Suara On</span>
+          </button>
+
+          <div id="firebaseStatusBadge" class="text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5 bg-emerald-100 text-emerald-800 shadow-sm">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
             <span id="firebaseStatusText">Preview / Siap Online</span>
           </div>
 
           <!-- Mobile Cart Toggle Button -->
-          <button onclick="toggleMobileCart(true)" class="md:hidden relative p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl transition">
+          <button onclick="toggleMobileCart(true)" class="md:hidden relative p-2.5 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-2xl transition border border-brand-200">
             <i class="fa-solid fa-cart-shopping text-base"></i>
             <span id="mobileCartBadge" class="absolute -top-1 -right-1 bg-brand-600 text-white text-[10px] font-bold rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center ring-2 ring-white">0</span>
           </button>
@@ -275,29 +297,37 @@
           <div class="flex-1 flex flex-col h-full overflow-hidden p-3 sm:p-5">
             
             <!-- Hero Promo Banner -->
-            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-800 via-brand-700 to-emerald-700 text-white p-5 sm:p-6 mb-4 shadow-sm shrink-0">
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-800 via-brand-700 to-emerald-600 text-white p-5 sm:p-6 mb-4 shadow-lg shadow-brand-800/10 shrink-0 border border-emerald-600/30">
               <div class="relative z-10 max-w-sm">
-                <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md mb-2">Segar & Hemat</span>
-                <h3 class="text-xl sm:text-2xl font-black tracking-tight leading-tight">Fresh & Healthy</h3>
-                <p class="text-xs sm:text-sm text-emerald-100 mt-1 mb-3">Dapatkan diskon spesial untuk produk segar hari ini</p>
-                <button onclick="filterCategory('Sayur')" class="px-4 py-2 bg-white text-brand-800 text-xs font-bold rounded-xl shadow hover:bg-emerald-50 transition-all flex items-center gap-1.5">
-                  <span>Lihat Promo</span>
-                  <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                </button>
+                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-white/20 backdrop-blur-md mb-2 tracking-wide border border-white/20">
+                  <i class="fa-solid fa-sparkles text-amber-300"></i> Segar & Hemat Setiap Hari
+                </span>
+                <h3 class="text-xl sm:text-2xl font-black tracking-tight leading-tight">Kedai Segar Murah Enak</h3>
+                <p class="text-xs sm:text-sm text-emerald-100 mt-1 mb-3">Minuman Cup segar, Kelapa Murni, dan Kentang Spiral renyah gurih!</p>
+                <div class="flex items-center gap-2">
+                  <button onclick="filterCategory('Minuman Cup 16 OZ')" class="px-3.5 py-1.5 bg-white text-brand-800 text-xs font-bold rounded-xl shadow-md hover:bg-emerald-50 transition-all flex items-center gap-1.5 active:scale-95">
+                    <i class="fa-solid fa-glass-water text-xs"></i>
+                    <span>Minuman Cup</span>
+                  </button>
+                  <button onclick="filterCategory('Kentang Spiral')" class="px-3.5 py-1.5 bg-brand-900/40 backdrop-blur-md text-white text-xs font-bold rounded-xl border border-white/30 hover:bg-brand-900/60 transition-all flex items-center gap-1.5 active:scale-95">
+                    <i class="fa-solid fa-tornado text-xs"></i>
+                    <span>Kentang Spiral</span>
+                  </button>
+                </div>
               </div>
-              <div class="absolute right-0 top-0 bottom-0 w-2/5 opacity-30 sm:opacity-50 pointer-events-none flex items-center justify-end pr-4 text-7xl sm:text-8xl text-white">
-                <i class="fa-solid fa-leaf"></i>
+              <div class="absolute right-2 -bottom-4 opacity-25 sm:opacity-40 pointer-events-none flex items-center justify-end text-8xl sm:text-9xl text-white">
+                <i class="fa-solid fa-mug-saucer"></i>
               </div>
             </div>
 
             <!-- Search Bar -->
-            <div class="relative mb-4 shrink-0">
+            <div class="relative mb-3 shrink-0">
               <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
                 <i class="fa-solid fa-magnifying-glass"></i>
               </span>
-              <input type="text" id="posSearchInput" oninput="handleProductSearch(this.value)" placeholder="Cari nama produk..."
-                class="w-full pl-11 pr-12 py-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
-              <button onclick="clearSearch()" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600">
+              <input type="text" id="posSearchInput" oninput="handleProductSearch(this.value)" placeholder="Cari nama menu / minuman / kentang..."
+                class="w-full pl-11 pr-12 py-3 bg-white rounded-2xl border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm transition">
+              <button onclick="clearSearch()" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition">
                 <i class="fa-solid fa-circle-xmark"></i>
               </button>
             </div>
@@ -306,7 +336,12 @@
             <div class="mb-4 shrink-0">
               <div class="flex items-center justify-between mb-2">
                 <h4 class="font-bold text-slate-800 text-sm">Kategori Pilihan</h4>
-                <span class="text-xs text-brand-700 font-semibold cursor-pointer" onclick="filterCategory('All')">Semua Kategori</span>
+                <div class="flex items-center gap-2">
+                  <button onclick="openCategoryModal()" class="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 px-2.5 py-1 rounded-xl font-bold transition flex items-center gap-1 border border-brand-200">
+                    <i class="fa-solid fa-plus text-[10px]"></i> Kategori Baru
+                  </button>
+                  <span class="text-xs text-brand-700 font-semibold cursor-pointer" onclick="filterCategory('All')">Semua</span>
+                </div>
               </div>
               <div id="categoryContainer" class="flex gap-2.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-none">
                 <!-- Diinjeksi oleh JS -->
@@ -517,6 +552,23 @@
         <!-- ================= VIEW 4: PENGATURAN TOKO & KASIR ================= -->
         <section id="view-settings" class="absolute inset-0 hidden flex-col overflow-y-auto p-4 sm:p-6 pb-24 md:pb-6">
           <div class="max-w-4xl mx-auto w-full space-y-6">
+
+            <!-- Kelola Kategori Kustom -->
+            <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-lg font-bold text-slate-800">Kelola Kategori Menu & Jualan</h3>
+                  <p class="text-xs text-slate-500">Sesuaikan kategori jualan Anda (Contoh: Minuman Cup, Kelapa Muda, Kentang Spiral)</p>
+                </div>
+                <button onclick="openCategoryModal()" class="px-3.5 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded-xl shadow transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-folder-plus"></i> Tambah Kategori
+                </button>
+              </div>
+
+              <div id="settingsCategoryList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <!-- Daftar Kategori Diinjeksi JS -->
+              </div>
+            </div>
 
             <!-- Informasi Toko Form -->
             <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-6">
@@ -854,16 +906,12 @@
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Kategori</label>
             <select id="formProductCategory" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
-              <option value="Buah">Buah</option>
-              <option value="Sayur">Sayur</option>
-              <option value="Susu">Susu & Telur</option>
-              <option value="Snack">Snack & Makanan</option>
-              <option value="Sembako">Sembako</option>
+              <!-- Opsi Kategori Diisi Dinamis oleh JS -->
             </select>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Satuan</label>
-            <input type="text" id="formProductUnit" required placeholder="kg / ikat / pack / pcs" value="pcs"
+            <input type="text" id="formProductUnit" required placeholder="cup / porsi / tusuk / bungkus" value="cup"
               class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-500">
           </div>
         </div>
@@ -871,29 +919,71 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Harga Jual (Rp)</label>
-            <input type="number" id="formProductPrice" required placeholder="15000" min="0"
+            <input type="number" id="formProductPrice" required min="0" placeholder="5000"
               class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-500 font-semibold">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Stok Awal</label>
-            <input type="number" id="formProductStock" required placeholder="50" min="0"
+            <input type="number" id="formProductStock" required min="0" placeholder="100"
               class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-500 font-semibold">
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">URL Gambar Produk (Opsional)</label>
-          <input type="url" id="formProductImage" placeholder="https://..."
+          <input type="url" id="formProductImage" placeholder="https://images.unsplash.com/..."
             class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-500">
-          <span class="text-[10px] text-slate-400">Kosongkan untuk menggunakan placeholder otomatis sesuai kategori.</span>
+        </div>
+
+        <div class="pt-3 flex justify-end gap-2">
+          <button type="button" onclick="closeProductModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2 bg-brand-700 hover:bg-brand-800 text-white rounded-xl text-xs font-bold shadow-md shadow-brand-700/20 transition">
+            Simpan Produk
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL TAMBAH / EDIT KATEGORI ================= -->
+  <div id="categoryModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 id="categoryModalTitle" class="font-bold text-slate-800 text-base">Tambah Kategori Baru</h3>
+        <button onclick="closeCategoryModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="categoryForm" onsubmit="handleSaveCategory(event)" class="space-y-3.5">
+        <input type="hidden" id="formCategoryId">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Kategori</label>
+          <input type="text" id="formCategoryName" required placeholder="Contoh: Minuman Cup, Kelapa Muda"
+            class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Pilih Ikon</label>
+          <select id="formCategoryIcon" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-brand-500 bg-white">
+            <option value="fa-glass-water">🥤 Gelas Minuman (Cup)</option>
+            <option value="fa-circle-notch">🥥 Kelapa Muda / Buah</option>
+            <option value="fa-tornado">🌪️ Kentang Spiral / Snack</option>
+            <option value="fa-mug-hot">☕ Kopi / Minuman Hangat</option>
+            <option value="fa-burger">🍔 Makanan Berat</option>
+            <option value="fa-cookie-bite">🍪 Camilan / Snack</option>
+            <option value="fa-utensils">🍴 Makanan Umum</option>
+            <option value="fa-tags">🏷️ Lainnya</option>
+          </select>
         </div>
 
         <div class="pt-2 flex justify-end gap-2">
-          <button type="button" onclick="closeProductModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">
+          <button type="button" onclick="closeCategoryModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">
             Batal
           </button>
           <button type="submit" class="px-5 py-2 bg-brand-700 hover:bg-brand-800 text-white rounded-xl text-xs font-bold transition">
-            Simpan Produk
+            Simpan Kategori
           </button>
         </div>
       </form>
@@ -939,19 +1029,63 @@
     </div>
   </div>
 
+  <!-- ================= MODAL KONFIRMASI HAPUS KATEGORI ================= -->
+  <div id="deleteCategoryModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 relative text-center">
+      <div class="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+      <h3 class="font-bold text-slate-800 text-base mb-1">Hapus Kategori?</h3>
+      <p class="text-xs text-slate-500 mb-4">
+        Kategori <span id="deleteCategoryTargetName" class="font-bold text-slate-800"></span> akan dihapus. Produk yang berada dalam kategori ini tetap aman dan dialihkan ke kategori "Lainnya".
+      </p>
+      <input type="hidden" id="deleteCategoryTargetId">
+
+      <div class="flex gap-2">
+        <button type="button" onclick="closeDeleteCategoryModal()" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">
+          Batal
+        </button>
+        <button type="button" onclick="executeDeleteCategory()" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-md shadow-red-600/20 transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-trash-can text-xs"></i>
+          <span>Ya, Hapus</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL KONFIRMASI UMUM (PENGGANTI CONFIRM) ================= -->
+  <div id="actionConfirmModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 relative text-center">
+      <div id="actionConfirmIconBox" class="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3">
+        <i id="actionConfirmIcon" class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h3 id="actionConfirmTitle" class="font-bold text-slate-800 text-base mb-1">Konfirmasi Aksi</h3>
+      <p id="actionConfirmDesc" class="text-xs text-slate-500 mb-5">Apakah Anda yakin ingin melanjutkan tindakan ini?</p>
+
+      <div class="flex gap-2">
+        <button type="button" onclick="closeActionConfirmModal()" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">
+          Batal
+        </button>
+        <button type="button" id="btnActionConfirmExecute" class="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center justify-center gap-1.5">
+          <span id="actionConfirmBtnText">Lanjutkan</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= JAVASCRIPT & FIREBASE INTEGRATION ================= -->
   <script type="module">
     // KONFIGURASI APLIKASI
     const IS_PREVIEW = false;
 
     const firebaseConfig = {
-       apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
-  authDomain: "pos-umkm-santri.firebaseapp.com",
-  projectId: "pos-umkm-santri",
-  storageBucket: "pos-umkm-santri.firebasestorage.app",
-  messagingSenderId: "23516519899",
-  appId: "1:23516519899:web:a433075736551edb8cdbfe",
-  measurementId: "G-5NS66RQV34"
+      apiKey : "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w" , 
+  authDomain : "pos-umkm-santri.firebaseapp.com" , 
+  projectId : "pos-umkm-santri" , 
+  storageBucket : "pos-umkm-santri.firebasestorage.app" , 
+  messagingSenderId : "23516519899" , 
+  ID aplikasi : "1:23516519899:web:a433075736551edb8cdbfe" , 
+  ID pengukuran : "G-5NS66RQV34" 
     };
 
     // Firebase Imports
@@ -965,6 +1099,80 @@
 
     const DEFAULT_QRIS_URL = 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=00020101021126570014ID.LINKAJA.WWW0118936009140022550215ID10254340022550303A0151440014ID.GOPAY.WWW0215ID10254340022550303A015204581253033605802ID5923M.HABIBULLAH,%20PEKERJA%20KO6008SURABAYA61056029362070703A016304';
 
+    // Audio Web Audio Context Synth untuk Suara Kasir
+    let audioEnabled = true;
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    // Suara Beep Tambah Keranjang
+    function playBeepSound() {
+      if (!audioEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(950, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.08);
+      } catch (e) {
+        console.debug('Audio feedback skip:', e);
+      }
+    }
+
+    // Suara Cha-Ching / Berhasil Transaksi
+    function playSuccessSound() {
+      if (!audioEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + (idx * 0.07));
+          gain.gain.setValueAtTime(0.15, now + (idx * 0.07));
+          gain.gain.exponentialRampToValueAtTime(0.001, now + (idx * 0.07) + 0.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + (idx * 0.07));
+          osc.stop(now + (idx * 0.07) + 0.25);
+        });
+      } catch (e) {
+        console.debug('Audio success skip:', e);
+      }
+    }
+
+    window.toggleAudioMute = function() {
+      audioEnabled = !audioEnabled;
+      const icon = document.getElementById('audioIcon');
+      const label = document.getElementById('audioLabel');
+      if (audioEnabled) {
+        icon.className = 'fa-solid fa-volume-high text-brand-700';
+        if (label) label.innerText = 'Suara On';
+        showToast('Efek suara kasir diaktifkan', 'info');
+        playBeepSound();
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark text-slate-400';
+        if (label) label.innerText = 'Mute';
+        showToast('Suara kasir dinonaktifkan', 'info');
+      }
+    };
+
     // State Store
     const state = {
       currentUser: null,
@@ -974,39 +1182,50 @@
       discount: 0,
       activeInvoiceNumber: '',
       paymentMethod: 'Tunai',
+      categories: [],
       products: [],
       transactions: [],
       cashiers: [],
       settings: {
-        storeName: 'Toko Berkah Segar',
+        storeName: 'Kedai Segar Murah Enak',
         storePhone: '0812-3456-7890',
-        storeAddress: 'Jl. Raya Pasar Induk No. 12, Surabaya',
-        storeFooter: 'Terima kasih telah berbelanja di UMKM kami! Semoga berkah.',
+        storeAddress: 'Jl. Raya Wisata Kuliner No. 08, Surabaya',
+        storeFooter: 'Terima kasih atas pesanan Anda! Nikmati Segar, Murah, dan Enaknya!',
         qrisMerchantName: 'M.HABIBULLAH, PEKERJA KON',
         qrisNmid: 'ID1025434002255',
         qrisImageUrl: DEFAULT_QRIS_URL
       }
     };
 
-    // Data Awal Dummy
+    // Data Awal Produk Realtime Berdasarkan Menu Foto
     const initialDummyProducts = [
-      { id: 'p1', name: 'Pisang Cavendish Segar', category: 'Buah', price: 18000, stock: 45, unit: 'kg', imageUrl: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=300&q=80' },
-      { id: 'p2', name: 'Brokoli Hijau Organik', category: 'Sayur', price: 14000, stock: 30, unit: 'kg', imageUrl: 'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c?auto=format&fit=crop&w=300&q=80' },
-      { id: 'p3', name: 'Telur Ayam Negeri', category: 'Susu', price: 29000, stock: 60, unit: 'tray', imageUrl: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?auto=format&fit=crop&w=300&q=80' },
-      { id: 'p4', name: 'Susu UHT Full Cream', category: 'Susu', price: 19500, stock: 50, unit: 'kotak', imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?auto=format&fit=crop&w=300&q=80' },
-      { id: 'p5', name: 'Apel Fuji Manis', category: 'Buah', price: 32000, stock: 25, unit: 'kg', imageUrl: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=300&q=80' },
-      { id: 'p6', name: 'Wortel Brastagi', category: 'Sayur', price: 12000, stock: 40, unit: 'kg', imageUrl: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&w=300&q=80' },
-      { id: 'p7', name: 'Keripik Singkong Renyah', category: 'Snack', price: 10000, stock: 75, unit: 'pack', imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=300&q=80' },
-      { id: 'p8', name: 'Beras Premium 5kg', category: 'Sembako', price: 72000, stock: 20, unit: 'karung', imageUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=300&q=80' }
+      // Kategori: Minuman Cup 16 OZ
+      { id: 'p_capcin', name: 'Es Capcin (Cappuccino Cincau Coklat)', category: 'Minuman Cup 16 OZ', price: 5000, stock: 100, unit: 'cup', imageUrl: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=300&q=80' },
+      { id: 'p_boba', name: 'Es Boba (Teh Susu + Boba Hitam)', category: 'Minuman Cup 16 OZ', price: 5000, stock: 80, unit: 'cup', imageUrl: 'https://images.unsplash.com/photo-1558857563-b37fe43b2241?auto=format&fit=crop&w=300&q=80' },
+      { id: 'p_nutrisari', name: 'Nutrisari Orange', category: 'Minuman Cup 16 OZ', price: 3000, stock: 120, unit: 'cup', imageUrl: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=300&q=80' },
+      { id: 'p_jossu', name: 'Jossu (Extra Joss Susu Soda Kuning)', category: 'Minuman Cup 16 OZ', price: 5000, stock: 90, unit: 'cup', imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=300&q=80' },
+      { id: 'p_frenta', name: 'Frenta Bungkus (Karet Hijau)', category: 'Minuman Cup 16 OZ', price: 2000, stock: 150, unit: 'bungkus', imageUrl: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=300&q=80' },
+      { id: 'p_popice', name: 'Pop Ice Aneka Rasa', category: 'Minuman Cup 16 OZ', price: 4000, stock: 100, unit: 'cup', imageUrl: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=300&q=80' },
+      { id: 'p_kopi_hitam', name: 'Kopi Hitam Panas', category: 'Minuman Cup 16 OZ', price: 4000, stock: 75, unit: 'cangkir', imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=300&q=80' },
+      { id: 'p_kopi_susu', name: 'Kopi Susu Hangat', category: 'Minuman Cup 16 OZ', price: 5000, stock: 75, unit: 'cangkir', imageUrl: 'https://images.unsplash.com/photo-1534778101976-62847782c213?auto=format&fit=crop&w=300&q=80' },
+
+      // Kategori: Menu Kelapa Muda
+      { id: 'p_kelapa_bungkus', name: 'Kelapa Murni Bungkus 35x10', category: 'Menu Kelapa Muda', price: 12000, stock: 50, unit: 'bungkus', imageUrl: 'https://images.unsplash.com/photo-1544378730-8b5104b18790?auto=format&fit=crop&w=300&q=80' },
+      { id: 'p_kelapa_cup22', name: 'Kelapa Murni Cup 22', category: 'Menu Kelapa Muda', price: 10000, stock: 60, unit: 'cup', imageUrl: 'https://images.unsplash.com/photo-1544378730-8b5104b18790?auto=format&fit=crop&w=300&q=80' },
+      { id: 'p_kelapa_aren', name: 'Es Kelapa Gula Aren', category: 'Menu Kelapa Muda', price: 5000, stock: 80, unit: 'cup', imageUrl: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?auto=format&fit=crop&w=300&q=80' },
+      { id: 'p_kelapa_sirup', name: 'Es Kelapa Sirup', category: 'Menu Kelapa Muda', price: 5000, stock: 80, unit: 'cup', imageUrl: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?auto=format&fit=crop&w=300&q=80' },
+
+      // Kategori: Kentang Spiral
+      { id: 'p_spiral_saos', name: 'Kentang Spiral Saos (Saos Tomat + Mayo)', category: 'Kentang Spiral', price: 5000, stock: 120, unit: 'tusuk', imageUrl: 'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=300&q=80' },
+      { id: 'p_spiral_tabur', name: 'Kentang Spiral Tabur (Balado/Keju/BBQ)', category: 'Kentang Spiral', price: 5000, stock: 120, unit: 'tusuk', imageUrl: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=300&q=80' }
     ];
 
+    // Custom Kategori Menu
     const initialCategories = [
-      { id: 'All', name: 'Semua', icon: 'fa-layer-group' },
-      { id: 'Buah', name: 'Buah Segar', icon: 'fa-apple-whole' },
-      { id: 'Sayur', name: 'Sayuran', icon: 'fa-carrot' },
-      { id: 'Susu', name: 'Susu & Telur', icon: 'fa-egg' },
-      { id: 'Snack', name: 'Camilan', icon: 'fa-cookie-bite' },
-      { id: 'Sembako', name: 'Sembako', icon: 'fa-wheat-awn' }
+      { id: 'All', name: 'Semua Menu', icon: 'fa-layer-group', isSystem: true },
+      { id: 'Minuman Cup 16 OZ', name: 'Minuman Cup 16 OZ', icon: 'fa-glass-water' },
+      { id: 'Menu Kelapa Muda', name: 'Kelapa Muda', icon: 'fa-circle-notch' },
+      { id: 'Kentang Spiral', name: 'Kentang Spiral', icon: 'fa-tornado' }
     ];
 
     const initialDummyCashiers = [
@@ -1019,13 +1238,14 @@
     // -------------------------------------------------------------
     async function initApplication() {
       registerDynamicPWA();
+      startLiveClock();
 
       if (!IS_PREVIEW && firebaseConfig.apiKey !== "API_KEY_ANDA") {
         try {
           app = initializeApp(firebaseConfig);
           auth = getAuth(app);
           db = getFirestore(app);
-          document.getElementById('firebaseStatusBadge').className = 'text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5 bg-emerald-100 text-emerald-800';
+          document.getElementById('firebaseStatusBadge').className = 'text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5 bg-emerald-100 text-emerald-800 shadow-sm';
           document.getElementById('firebaseStatusText').innerText = 'Online Firebase';
           await autoSetupDatabase();
           listenToFirebaseRealtime();
@@ -1039,12 +1259,26 @@
 
       generateNewInvoiceNumber();
       renderCategories();
+      renderCategoryDropdown();
+      renderCategorySettingsList();
       renderProducts();
       renderCashierList();
       updateSettingsUI();
     }
 
+    function startLiveClock() {
+      const clockEl = document.getElementById('liveClock');
+      if (!clockEl) return;
+      const update = () => {
+        const now = new Date();
+        clockEl.innerText = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      };
+      update();
+      setInterval(update, 1000);
+    }
+
     function fallbackToLocalMode() {
+      state.categories = [...initialCategories];
       state.products = [...initialDummyProducts];
       state.cashiers = [...initialDummyCashiers];
       state.transactions = [
@@ -1053,13 +1287,16 @@
           invoiceNumber: 'INV/2026/0001',
           cashierName: 'Sarah Amelia',
           date: new Date(Date.now() - 3600000).toLocaleString('id-ID'),
-          items: [{ name: 'Pisang Cavendish Segar', qty: 2, price: 18000, subtotal: 36000 }],
-          subtotal: 36000,
+          items: [
+            { name: 'Kentang Spiral Saos (Saos Tomat + Mayo)', qty: 2, price: 5000, subtotal: 10000 },
+            { name: 'Es Capcin (Cappuccino Cincau Coklat)', qty: 2, price: 5000, subtotal: 10000 }
+          ],
+          subtotal: 20000,
           discount: 0,
-          totalAmount: 36000,
+          totalAmount: 20000,
           paymentMethod: 'Tunai',
-          cashPaid: 50000,
-          change: 14000
+          cashPaid: 20000,
+          change: 0
         }
       ];
       document.getElementById('firebaseStatusBadge').className = 'text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5 bg-blue-100 text-blue-800';
@@ -1069,17 +1306,20 @@
     async function autoSetupDatabase() {
       if (!db) return;
       try {
-        const prodSnap = await getDocs(collection(db, "products"));
-        if (prodSnap.empty) {
-          showToast('Mengisi data awal toko ke Firestore...', 'info');
+        const catSnap = await getDocs(collection(db, "categories"));
+        if (catSnap.empty) {
+          showToast('Mengisi kategori & menu jualan awal...', 'info');
+          for (const c of initialCategories) {
+            await setDoc(doc(db, "categories", c.id), c);
+          }
           for (const item of initialDummyProducts) {
             await setDoc(doc(db, "products", item.id), item);
           }
-          for (const c of initialDummyCashiers) {
-            await setDoc(doc(db, "cashiers", c.id), c);
+          for (const cs of initialDummyCashiers) {
+            await setDoc(doc(db, "cashiers", cs.id), cs);
           }
           await setDoc(doc(db, "settings", "store_profile"), state.settings);
-          showToast('Auto setup database berhasil!', 'success');
+          showToast('Auto setup database menu selesai!', 'success');
         }
       } catch (err) {
         console.error("Auto setup error:", err);
@@ -1088,6 +1328,18 @@
 
     function listenToFirebaseRealtime() {
       if (!db) return;
+
+      onSnapshot(collection(db, "categories"), (snapshot) => {
+        const cats = [];
+        snapshot.forEach(docSnap => cats.push({ id: docSnap.id, ...docSnap.data() }));
+        if (cats.length > 0) {
+          state.categories = cats;
+          renderCategories();
+          renderCategoryDropdown();
+          renderCategorySettingsList();
+        }
+      });
+
       onSnapshot(collection(db, "products"), (snapshot) => {
         const prods = [];
         snapshot.forEach(docSnap => prods.push({ id: docSnap.id, ...docSnap.data() }));
@@ -1276,21 +1528,169 @@
     // -------------------------------------------------------------
     function renderCategories() {
       const container = document.getElementById('categoryContainer');
-      container.innerHTML = initialCategories.map(cat => {
+      const cats = state.categories && state.categories.length > 0 ? state.categories : initialCategories;
+
+      container.innerHTML = cats.map(cat => {
         const isActive = state.activeCategory === cat.id;
+        const isAll = cat.id === 'All';
         return `
-          <button onclick="filterCategory('${cat.id}')"
-            class="flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shadow-sm ${
-              isActive 
-                ? 'bg-brand-700 text-white shadow-brand-700/20' 
-                : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
-            }">
-            <i class="fa-solid ${cat.icon} ${isActive ? 'text-white' : 'text-brand-700'}"></i>
-            <span>${cat.name}</span>
-          </button>
+          <div class="flex items-center group relative shrink-0">
+            <button onclick="filterCategory('${cat.id}')"
+              class="flex items-center gap-2 pl-3.5 ${isAll ? 'pr-3.5' : 'pr-2'} py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shadow-sm ${
+                isActive 
+                  ? 'bg-brand-700 text-white shadow-brand-700/20' 
+                  : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
+              }">
+              <i class="fa-solid ${cat.icon || 'fa-tag'} ${isActive ? 'text-white' : 'text-brand-700'}"></i>
+              <span>${cat.name}</span>
+            </button>
+            ${!isAll ? `
+              <button onclick="promptDeleteCategory(event, '${cat.id}', '${cat.name}')" 
+                class="ml-1 p-1.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition opacity-80 group-hover:opacity-100" 
+                title="Hapus Kategori ${cat.name}">
+                <i class="fa-solid fa-xmark text-xs"></i>
+              </button>
+            ` : ''}
+          </div>
         `;
       }).join('');
     }
+
+    function renderCategoryDropdown(selectedCategory = '') {
+      const select = document.getElementById('formProductCategory');
+      if (!select) return;
+      const cats = (state.categories && state.categories.length > 0 ? state.categories : initialCategories).filter(c => c.id !== 'All');
+
+      select.innerHTML = cats.map(c => `
+        <option value="${c.name}" ${selectedCategory === c.name ? 'selected' : ''}>${c.name}</option>
+      `).join('');
+    }
+
+    function renderCategorySettingsList() {
+      const container = document.getElementById('settingsCategoryList');
+      if (!container) return;
+      const cats = (state.categories && state.categories.length > 0 ? state.categories : initialCategories).filter(c => c.id !== 'All');
+
+      container.innerHTML = cats.map(cat => `
+        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200/70 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-white border border-slate-200 text-brand-700 flex items-center justify-center text-sm shadow-sm">
+              <i class="fa-solid ${cat.icon || 'fa-tag'}"></i>
+            </div>
+            <div>
+              <h5 class="text-xs font-bold text-slate-800">${cat.name}</h5>
+              <span class="text-[10px] text-slate-400">Kustom Kategori</span>
+            </div>
+          </div>
+          <button onclick="promptDeleteCategory(event, '${cat.id}', '${cat.name}')" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-xl text-xs transition" title="Hapus Kategori">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // Modal Kategori Handler
+    window.openCategoryModal = function() {
+      document.getElementById('categoryForm').reset();
+      document.getElementById('formCategoryId').value = '';
+      const m = document.getElementById('categoryModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    };
+
+    window.closeCategoryModal = function() {
+      const m = document.getElementById('categoryModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    };
+
+    window.handleSaveCategory = async function(e) {
+      e.preventDefault();
+      const name = document.getElementById('formCategoryName').value.trim();
+      const icon = document.getElementById('formCategoryIcon').value;
+      if (!name) return;
+
+      const newCat = {
+        id: name,
+        name: name,
+        icon: icon
+      };
+
+      const existingIdx = state.categories.findIndex(c => c.id.toLowerCase() === name.toLowerCase());
+      if (existingIdx !== -1) {
+        showToast('Kategori sudah ada!', 'warning');
+        return;
+      }
+
+      state.categories.push(newCat);
+      if (db && !IS_PREVIEW) {
+        setDoc(doc(db, "categories", newCat.id), newCat).catch(console.error);
+      }
+
+      closeCategoryModal();
+      renderCategories();
+      renderCategoryDropdown();
+      renderCategorySettingsList();
+      showToast(`Kategori "${name}" berhasil ditambahkan!`, 'success');
+    };
+
+    // Modal Konfirmasi Hapus Kategori Tanpa confirm()
+    window.promptDeleteCategory = function(e, catId, catName) {
+      if (e) e.stopPropagation();
+      if (catId === 'All') return;
+
+      document.getElementById('deleteCategoryTargetId').value = catId;
+      document.getElementById('deleteCategoryTargetName').innerText = `"${catName || catId}"`;
+      
+      const modal = document.getElementById('deleteCategoryModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    };
+
+    window.closeDeleteCategoryModal = function() {
+      const modal = document.getElementById('deleteCategoryModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    };
+
+    window.executeDeleteCategory = async function() {
+      const catId = document.getElementById('deleteCategoryTargetId').value;
+      if (!catId) return;
+
+      const catObj = state.categories.find(c => c.id === catId);
+      const catName = catObj ? catObj.name : catId;
+
+      // 1. Hapus kategori dari state
+      state.categories = state.categories.filter(c => c.id !== catId);
+
+      // 2. Alihkan produk berkategori ini ke 'Lainnya' agar tidak hilang dari katalog
+      state.products.forEach(p => {
+        if (p.category === catName || p.category === catId) {
+          p.category = 'Lainnya';
+          if (db && !IS_PREVIEW) {
+            updateDoc(doc(db, "products", p.id), { category: 'Lainnya' }).catch(console.error);
+          }
+        }
+      });
+
+      // 3. Reset filter aktif jika yang dihapus sedang dipilih
+      if (state.activeCategory === catId) {
+        state.activeCategory = 'All';
+      }
+
+      // 4. Sinkronisasi ke Firestore jika mode online
+      if (db && !IS_PREVIEW) {
+        deleteDoc(doc(db, "categories", catId)).catch(console.error);
+      }
+
+      closeDeleteCategoryModal();
+      renderCategories();
+      renderCategoryDropdown();
+      renderCategorySettingsList();
+      renderProducts();
+      renderProductTable();
+      showToast(`Kategori "${catName}" berhasil dihapus`, 'info');
+    };
 
     window.filterCategory = function(catId) {
       state.activeCategory = catId;
@@ -1332,17 +1732,21 @@
 
       grid.innerHTML = filtered.map(item => {
         const isOutOfStock = item.stock <= 0;
+        const isLowStock = item.stock > 0 && item.stock < 10;
         return `
-          <div class="bg-white rounded-3xl p-3 sm:p-4 border border-slate-200/70 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group relative overflow-hidden">
-            <span class="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              isOutOfStock ? 'bg-red-100 text-red-700' : 'bg-emerald-50 text-brand-700'
+          <div class="card-hover-effect bg-white rounded-3xl p-3 sm:p-4 border border-slate-200/80 shadow-sm flex flex-col justify-between group relative overflow-hidden">
+            <span class="absolute top-3 right-3 text-[10px] font-bold px-2.5 py-0.5 rounded-full z-10 shadow-sm ${
+              isOutOfStock 
+                ? 'bg-red-100 text-red-700 border border-red-200' 
+                : (isLowStock ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-brand-700 border border-emerald-200')
             }">
-              ${isOutOfStock ? 'Habis' : `Stok: ${item.stock}`}
+              ${isOutOfStock ? 'Habis' : (isLowStock ? `Sisa: ${item.stock}` : `Stok: ${item.stock}`)}
             </span>
 
             <div class="w-full h-32 rounded-2xl bg-slate-50 overflow-hidden mb-3 relative flex items-center justify-center">
               <img src="${item.imageUrl || `https://placehold.co/300x300/2d6a4f/ffffff?text=${encodeURIComponent(item.name)}`}" 
                    alt="${item.name}" 
+                   loading="lazy"
                    onerror="this.src='https://placehold.co/300x300/2d6a4f/ffffff?text=Produk'"
                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
             </div>
@@ -1352,12 +1756,12 @@
               <h5 class="font-bold text-slate-800 text-xs sm:text-sm line-clamp-1 mt-0.5">${item.name}</h5>
               <div class="flex items-baseline gap-1 mt-1">
                 <span class="font-black text-slate-900 text-sm sm:text-base">Rp ${formatNumber(item.price)}</span>
-                <span class="text-[10px] text-slate-400">/${item.unit || 'pcs'}</span>
+                <span class="text-[10px] text-slate-400 font-medium">/${item.unit || 'pcs'}</span>
               </div>
             </div>
 
             <button onclick="addToCart('${item.id}')" ${isOutOfStock ? 'disabled' : ''}
-              class="mt-3 w-full py-2 px-3 rounded-xl bg-brand-600 hover:bg-brand-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-xs shadow-sm shadow-brand-600/20 transition-all flex items-center justify-center gap-1.5 active:scale-95">
+              class="mt-3 w-full py-2.5 px-3 rounded-xl bg-brand-700 hover:bg-brand-800 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-xs shadow-md shadow-brand-700/20 transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
               <i class="fa-solid fa-plus text-[11px]"></i>
               <span>${isOutOfStock ? 'Habis' : '+ Tambah'}</span>
             </button>
@@ -1394,6 +1798,7 @@
         });
       }
 
+      playBeepSound();
       updateCartUI();
       showToast(`${prod.name} ditambahkan`, 'info');
     };
@@ -1412,6 +1817,7 @@
         }
         item.qty = newQty;
       }
+      playBeepSound();
       updateCartUI();
     };
 
@@ -1638,6 +2044,21 @@
       }
 
       closePaymentModal();
+      playSuccessSound();
+
+      // Animasi Konfeti Perayaan
+      if (typeof confetti === 'function') {
+        try {
+          confetti({
+            particleCount: 80,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        } catch (e) {
+          console.debug('Confetti skip:', e);
+        }
+      }
+
       showToast('Transaksi Berhasil Disimpan!', 'success');
       
       renderReceipt(transactionData);
@@ -1793,15 +2214,17 @@
       if (editId) {
         const p = state.products.find(item => item.id === editId);
         if (!p) return;
+        renderCategoryDropdown(p.category);
         title.innerText = 'Edit Data Produk';
         document.getElementById('formProductId').value = p.id;
         document.getElementById('formProductName').value = p.name;
         document.getElementById('formProductCategory').value = p.category;
         document.getElementById('formProductPrice').value = p.price;
         document.getElementById('formProductStock').value = p.stock;
-        document.getElementById('formProductUnit').value = p.unit || 'pcs';
+        document.getElementById('formProductUnit').value = p.unit || 'cup';
         document.getElementById('formProductImage').value = p.imageUrl || '';
       } else {
+        renderCategoryDropdown();
         title.innerText = 'Tambah Produk Baru';
         form.reset();
         document.getElementById('formProductId').value = '';
@@ -1821,16 +2244,60 @@
       openProductModal(id);
     };
 
-    window.deleteProduct = async function(id) {
-      if (confirm('Yakin ingin menghapus produk ini dari katalog?')) {
-        state.products = state.products.filter(p => p.id !== id);
-        if (db && !IS_PREVIEW) {
-          deleteDoc(doc(db, "products", id)).catch(console.error);
+    let confirmCallback = null;
+
+    function openActionConfirm({ title, desc, btnText, btnColor, icon, onConfirm }) {
+      document.getElementById('actionConfirmTitle').innerText = title || 'Konfirmasi';
+      document.getElementById('actionConfirmDesc').innerText = desc || 'Apakah Anda yakin?';
+      document.getElementById('actionConfirmBtnText').innerText = btnText || 'Lanjutkan';
+      
+      const iconEl = document.getElementById('actionConfirmIcon');
+      iconEl.className = `fa-solid ${icon || 'fa-triangle-exclamation'}`;
+
+      const btnExec = document.getElementById('btnActionConfirmExecute');
+      btnExec.className = `flex-1 py-2.5 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center justify-center gap-1.5 ${btnColor || 'bg-red-600 hover:bg-red-700 shadow-red-600/20'}`;
+
+      confirmCallback = onConfirm;
+
+      btnExec.onclick = function() {
+        if (typeof confirmCallback === 'function') {
+          confirmCallback();
         }
-        renderProducts();
-        renderProductTable();
-        showToast('Produk berhasil dihapus', 'info');
-      }
+        closeActionConfirmModal();
+      };
+
+      const m = document.getElementById('actionConfirmModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    window.closeActionConfirmModal = function() {
+      const m = document.getElementById('actionConfirmModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+      confirmCallback = null;
+    };
+
+    window.deleteProduct = function(id) {
+      const prod = state.products.find(p => p.id === id);
+      const prodName = prod ? prod.name : 'Produk ini';
+
+      openActionConfirm({
+        title: 'Hapus Produk?',
+        desc: `Yakin ingin menghapus "${prodName}" dari katalog?`,
+        btnText: 'Hapus',
+        btnColor: 'bg-red-600 hover:bg-red-700 shadow-red-600/20',
+        icon: 'fa-trash-can',
+        onConfirm: async () => {
+          state.products = state.products.filter(p => p.id !== id);
+          if (db && !IS_PREVIEW) {
+            deleteDoc(doc(db, "products", id)).catch(console.error);
+          }
+          renderProducts();
+          renderProductTable();
+          showToast('Produk berhasil dihapus', 'info');
+        }
+      });
     };
 
     window.handleSaveProduct = async function(e) {
@@ -2083,20 +2550,38 @@
         showToast('Minimal harus ada 1 akun kasir aktif!', 'warning');
         return;
       }
-      if (confirm('Hapus akun kasir ini?')) {
-        state.cashiers = state.cashiers.filter(c => c.id !== id);
-        if (db && !IS_PREVIEW) {
-          deleteDoc(doc(db, "cashiers", id)).catch(console.error);
+
+      const cashier = state.cashiers.find(c => c.id === id);
+      const cName = cashier ? cashier.fullName : 'Kasir ini';
+
+      openActionConfirm({
+        title: 'Hapus Kasir?',
+        desc: `Yakin ingin menghapus akun kasir "${cName}"?`,
+        btnText: 'Hapus Kasir',
+        btnColor: 'bg-red-600 hover:bg-red-700 shadow-red-600/20',
+        icon: 'fa-user-xmark',
+        onConfirm: () => {
+          state.cashiers = state.cashiers.filter(c => c.id !== id);
+          if (db && !IS_PREVIEW) {
+            deleteDoc(doc(db, "cashiers", id)).catch(console.error);
+          }
+          renderCashierList();
+          showToast('Akun kasir dihapus', 'info');
         }
-        renderCashierList();
-        showToast('Akun kasir dihapus', 'info');
-      }
+      });
     };
 
     window.handleTriggerAutoSetup = function() {
-      if (confirm('Jalankan ulang auto setup data default ke Firebase?')) {
-        autoSetupDatabase();
-      }
+      openActionConfirm({
+        title: 'Reset & Auto Setup?',
+        desc: 'Jalankan ulang auto setup data default ke Firebase? Data awal menu akan disinkronkan kembali.',
+        btnText: 'Jalankan Setup',
+        btnColor: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20',
+        icon: 'fa-arrows-rotate',
+        onConfirm: () => {
+          autoSetupDatabase();
+        }
+      });
     };
 
     // -------------------------------------------------------------
