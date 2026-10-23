@@ -1076,17 +1076,18 @@
 
   <!-- ================= JAVASCRIPT & FIREBASE INTEGRATION ================= -->
   <script type="module">
-    // KONFIGURASI APLIKASI
-    const IS_PREVIEW = false;
-
+    // =============================================================
+    // KONFIGURASI FIREBASE ANDA
+    // =============================================================
+    // Menggunakan konfigurasi resmi proyek Firebase pos-umkm-santri
     const firebaseConfig = {
-apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
-  authDomain: "pos-umkm-santri.firebaseapp.com",
-  projectId: "pos-umkm-santri",
-  storageBucket: "pos-umkm-santri.firebasestorage.app",
-  messagingSenderId: "23516519899",
-  appId: "1:23516519899:web:5c655266dafc01cd8cdbfe",
-  measurementId: "G-2G02WFX88S"
+      apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
+      authDomain: "pos-umkm-santri.firebaseapp.com",
+      projectId: "pos-umkm-santri",
+      storageBucket: "pos-umkm-santri.firebasestorage.app",
+      messagingSenderId: "23516519899",
+      appId: "1:23516519899:web:5c655266dafc01cd8cdbfe",
+      measurementId: "G-2G02WFX88S"
     };
 
     // Firebase Imports
@@ -1097,6 +1098,7 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
     let app = null;
     let auth = null;
     let db = null;
+    let isFirebaseConnected = false;
 
     const DEFAULT_QRIS_URL = 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=00020101021126570014ID.LINKAJA.WWW0118936009140022550215ID10254340022550303A0151440014ID.GOPAY.WWW0215ID10254340022550303A015204581253033605802ID5923M.HABIBULLAH,%20PEKERJA%20KO6008SURABAYA61056029362070703A016304';
 
@@ -1213,7 +1215,7 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
       }
     };
 
-    // Data Awal Produk Realtime Berdasarkan Menu Foto
+    // Data Awal Cadangan (Hanya dipakai jika koleksi database Firebase masih kosong)
     const initialDummyProducts = [
       // Kategori: Minuman Cup 16 OZ
       { id: 'p_capcin', name: 'Es Capcin (Cappuccino Cincau Coklat)', category: 'Minuman Cup 16 OZ', price: 5000, stock: 100, unit: 'cup', imageUrl: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=300&q=80' },
@@ -1256,20 +1258,38 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
       registerDynamicPWA();
       startLiveClock();
 
-      if (!IS_PREVIEW && firebaseConfig.apiKey !== "API_KEY_ANDA") {
+      // Cek apakah konfigurasi Firebase asli telah diisi
+      const hasValidConfig = firebaseConfig.apiKey && 
+                             firebaseConfig.apiKey !== "API_KEY_ANDA" && 
+                             !firebaseConfig.projectId.includes("PROJECT_ID");
+
+      if (hasValidConfig) {
         try {
           app = initializeApp(firebaseConfig);
           auth = getAuth(app);
           db = getFirestore(app);
-          document.getElementById('firebaseStatusBadge').className = 'text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5 bg-emerald-100 text-emerald-800 shadow-sm';
-          document.getElementById('firebaseStatusText').innerText = 'Online Firebase';
-          await autoSetupDatabase();
+          isFirebaseConnected = true;
+          
+          const statusBadge = document.getElementById('firebaseStatusBadge');
+          const statusText = document.getElementById('firebaseStatusText');
+          if (statusBadge) statusBadge.className = 'text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5 bg-emerald-100 text-emerald-800 shadow-sm';
+          if (statusText) statusText.innerText = 'Online Firebase';
+
+          // Sinkronisasi realtime langsung dari Firestore
           listenToFirebaseRealtime();
+          await checkAndAutoSetup();
+          showToast('Terhubung ke database Firebase online!', 'success');
         } catch (e) {
-          console.error("Gagal terhubung ke Firebase, fallback mode lokal:", e);
+          console.error("Gagal terhubung ke Firebase:", e);
+          const statusBadge = document.getElementById('firebaseStatusBadge');
+          const statusText = document.getElementById('firebaseStatusText');
+          if (statusBadge) statusBadge.className = 'text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5 bg-red-100 text-red-800';
+          if (statusText) statusText.innerText = 'Koneksi Gagal';
+          showToast(`Gagal membaca Firebase: ${e.message}`, 'error');
           fallbackToLocalMode();
         }
       } else {
+        // Jika config belum diganti, gunakan mode demo lokal
         fallbackToLocalMode();
       }
 
@@ -1315,16 +1335,19 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
           change: 0
         }
       ];
-      document.getElementById('firebaseStatusBadge').className = 'text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5 bg-blue-100 text-blue-800';
-      document.getElementById('firebaseStatusText').innerText = 'Mode Demo Aktif';
+      const statusBadge = document.getElementById('firebaseStatusBadge');
+      const statusText = document.getElementById('firebaseStatusText');
+      if (statusBadge) statusBadge.className = 'text-xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5 bg-blue-100 text-blue-800';
+      if (statusText) statusText.innerText = 'Mode Demo (Lokal)';
     }
 
-    async function autoSetupDatabase() {
+    async function checkAndAutoSetup() {
       if (!db) return;
       try {
-        const catSnap = await getDocs(collection(db, "categories"));
-        if (catSnap.empty) {
-          showToast('Mengisi kategori & menu jualan awal...', 'info');
+        const prodSnap = await getDocs(collection(db, "products"));
+        // Hanya inject data jika di Firebase produk benar-benar masih 0
+        if (prodSnap.empty) {
+          showToast('Mengisi data awal ke database Firebase...', 'info');
           for (const c of initialCategories) {
             await setDoc(doc(db, "categories", c.id), c);
           }
@@ -1335,16 +1358,16 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
             await setDoc(doc(db, "cashiers", cs.id), cs);
           }
           await setDoc(doc(db, "settings", "store_profile"), state.settings);
-          showToast('Auto setup database menu selesai!', 'success');
         }
       } catch (err) {
-        console.error("Auto setup error:", err);
+        console.error("Cek database error:", err);
       }
     }
 
     function listenToFirebaseRealtime() {
       if (!db) return;
 
+      // 1. Kategori Realtime
       onSnapshot(collection(db, "categories"), (snapshot) => {
         const cats = [];
         snapshot.forEach(docSnap => cats.push({ id: docSnap.id, ...docSnap.data() }));
@@ -1354,28 +1377,55 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
           renderCategoryDropdown();
           renderCategorySettingsList();
         }
+      }, (error) => {
+        console.error("Gagal mendengarkan koleksi categories:", error);
       });
 
+      // 2. Produk Realtime (Memprioritaskan data Firebase Anda)
       onSnapshot(collection(db, "products"), (snapshot) => {
         const prods = [];
         snapshot.forEach(docSnap => prods.push({ id: docSnap.id, ...docSnap.data() }));
-        if (prods.length > 0) state.products = prods;
+        if (prods.length > 0) {
+          state.products = prods;
+        } else if (isFirebaseConnected && snapshot.empty) {
+          state.products = [];
+        }
         renderProducts();
         renderProductTable();
+      }, (error) => {
+        console.error("Gagal mendengarkan koleksi products:", error);
       });
 
+      // 3. Transaksi Realtime
       onSnapshot(collection(db, "transactions"), (snapshot) => {
         const txs = [];
         snapshot.forEach(docSnap => txs.push({ id: docSnap.id, ...docSnap.data() }));
         state.transactions = txs.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
         renderTransactions();
+      }, (error) => {
+        console.error("Gagal mendengarkan koleksi transactions:", error);
       });
 
+      // 4. Kasir Realtime
       onSnapshot(collection(db, "cashiers"), (snapshot) => {
         const cList = [];
         snapshot.forEach(docSnap => cList.push({ id: docSnap.id, ...docSnap.data() }));
         if (cList.length > 0) state.cashiers = cList;
         renderCashierList();
+      }, (error) => {
+        console.error("Gagal mendengarkan koleksi cashiers:", error);
+      });
+
+      // 5. Profil Toko Realtime
+      onSnapshot(collection(db, "settings"), (snapshot) => {
+        snapshot.forEach(docSnap => {
+          if (docSnap.id === "store_profile") {
+            state.settings = { ...state.settings, ...docSnap.data() };
+            updateSettingsUI();
+          }
+        });
+      }, (error) => {
+        console.error("Gagal mendengarkan koleksi settings:", error);
       });
     }
 
@@ -1446,7 +1496,7 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
       const email = document.getElementById('loginAdminEmail').value.trim();
       const pass = document.getElementById('loginAdminPassword').value.trim();
 
-      if (!IS_PREVIEW && auth) {
+      if (isFirebaseConnected && auth) {
         try {
           const userCredential = await signInWithEmailAndPassword(auth, email, pass);
           state.currentUser = {
@@ -1639,7 +1689,7 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
       }
 
       state.categories.push(newCat);
-      if (db && !IS_PREVIEW) {
+      if (db && isFirebaseConnected) {
         setDoc(doc(db, "categories", newCat.id), newCat).catch(console.error);
       }
 
@@ -1683,7 +1733,7 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
       state.products.forEach(p => {
         if (p.category === catName || p.category === catId) {
           p.category = 'Lainnya';
-          if (db && !IS_PREVIEW) {
+          if (db && isFirebaseConnected) {
             updateDoc(doc(db, "products", p.id), { category: 'Lainnya' }).catch(console.error);
           }
         }
@@ -1695,7 +1745,7 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
       }
 
       // 4. Sinkronisasi ke Firestore jika mode online
-      if (db && !IS_PREVIEW) {
+      if (db && isFirebaseConnected) {
         deleteDoc(doc(db, "categories", catId)).catch(console.error);
       }
 
@@ -2050,14 +2100,14 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
         const prod = state.products.find(p => p.id === cartItem.id);
         if (prod) {
           prod.stock = Math.max(0, prod.stock - cartItem.qty);
-          if (db && !IS_PREVIEW) {
+          if (db && isFirebaseConnected) {
             updateDoc(doc(db, "products", prod.id), { stock: prod.stock }).catch(console.error);
           }
         }
       }
 
       state.transactions.unshift(transactionData);
-      if (db && !IS_PREVIEW) {
+      if (db && isFirebaseConnected) {
         setDoc(doc(db, "transactions", transactionData.id), transactionData).catch(console.error);
       }
 
@@ -2308,7 +2358,7 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
         icon: 'fa-trash-can',
         onConfirm: async () => {
           state.products = state.products.filter(p => p.id !== id);
-          if (db && !IS_PREVIEW) {
+          if (db && isFirebaseConnected) {
             deleteDoc(doc(db, "products", id)).catch(console.error);
           }
           renderProducts();
@@ -2342,7 +2392,7 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
         const idx = state.products.findIndex(p => p.id === id);
         if (idx !== -1) {
           state.products[idx] = { ...state.products[idx], ...prodData };
-          if (db && !IS_PREVIEW) {
+          if (db && isFirebaseConnected) {
             updateDoc(doc(db, "products", id), prodData).catch(console.error);
           }
         }
@@ -2351,7 +2401,7 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
         const newId = 'prod_' + Date.now();
         const newObj = { id: newId, ...prodData };
         state.products.push(newObj);
-        if (db && !IS_PREVIEW) {
+        if (db && isFirebaseConnected) {
           setDoc(doc(db, "products", newId), newObj).catch(console.error);
         }
         showToast('Produk baru berhasil ditambahkan', 'success');
@@ -2498,7 +2548,7 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
         state.settings.qrisImageUrl = uploadedImg;
       }
 
-      if (db && !IS_PREVIEW) {
+      if (db && isFirebaseConnected) {
         setDoc(doc(db, "settings", "store_profile"), state.settings).catch(console.error);
       }
 
@@ -2554,7 +2604,7 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
       };
 
       state.cashiers.push(newCashier);
-      if (db && !IS_PREVIEW) {
+      if (db && isFirebaseConnected) {
         setDoc(doc(db, "cashiers", newCashier.id), newCashier).catch(console.error);
       }
 
@@ -2580,7 +2630,7 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
         icon: 'fa-user-xmark',
         onConfirm: () => {
           state.cashiers = state.cashiers.filter(c => c.id !== id);
-          if (db && !IS_PREVIEW) {
+          if (db && isFirebaseConnected) {
             deleteDoc(doc(db, "cashiers", id)).catch(console.error);
           }
           renderCashierList();
@@ -2597,7 +2647,7 @@ apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
         btnColor: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20',
         icon: 'fa-arrows-rotate',
         onConfirm: () => {
-          autoSetupDatabase();
+          checkAndAutoSetup();
         }
       });
     };
