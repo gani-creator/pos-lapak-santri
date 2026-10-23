@@ -294,78 +294,79 @@
         <section id="view-pos" class="absolute inset-0 flex flex-col md:flex-row overflow-hidden">
           
           <!-- Katalog Produk (Kiri / Utama) -->
-          <div class="flex-1 flex flex-col h-full overflow-hidden p-3 sm:p-5">
+          <div class="flex-1 flex flex-col h-full min-h-0 overflow-hidden p-2 sm:p-4 bg-[#F8FAF9]">
             
-            <!-- Hero Promo Banner -->
-            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-800 via-brand-700 to-emerald-600 text-white p-5 sm:p-6 mb-4 shadow-lg shadow-brand-800/10 shrink-0 border border-emerald-600/30">
-              <div class="relative z-10 max-w-sm">
-                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-white/20 backdrop-blur-md mb-2 tracking-wide border border-white/20">
-                  <i class="fa-solid fa-sparkles text-amber-300"></i> Segar & Hemat Setiap Hari
-                </span>
-                <h3 class="text-xl sm:text-2xl font-black tracking-tight leading-tight">Kedai Segar Murah Enak</h3>
-                <p class="text-xs sm:text-sm text-emerald-100 mt-1 mb-3">Minuman Cup segar, Kelapa Murni, dan Kentang Spiral renyah gurih!</p>
-                <div class="flex items-center gap-2">
-                  <button onclick="filterCategory('Minuman Cup 16 OZ')" class="px-3.5 py-1.5 bg-white text-brand-800 text-xs font-bold rounded-xl shadow-md hover:bg-emerald-50 transition-all flex items-center gap-1.5 active:scale-95">
-                    <i class="fa-solid fa-glass-water text-xs"></i>
-                    <span>Minuman Cup</span>
+            <!-- Sticky Top Controls: Search, Quick Stats & Kategori -->
+            <div class="shrink-0 space-y-2 mb-2 bg-[#F8FAF9]/95 backdrop-blur-sm z-10 pt-1 pb-1">
+              
+              <!-- Compact Banner Promo (Bisa di-toggle / Ringkas) -->
+              <div id="promoBannerWrapper" class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-800 via-brand-700 to-emerald-600 text-white px-4 py-2.5 shadow-md flex items-center justify-between transition-all duration-300">
+                <div class="flex items-center gap-2.5 sm:gap-3 z-10">
+                  <div class="w-9 h-9 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center text-lg text-amber-300 shrink-0">
+                    <i class="fa-solid fa-mug-saucer"></i>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs sm:text-sm font-extrabold tracking-tight">Kedai Segar Murah Enak</span>
+                      <span class="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20">Hemat Tiap Hari</span>
+                    </div>
+                    <p class="text-[11px] text-emerald-100 hidden sm:block">Minuman Cup 16 OZ, Kelapa Muda Murni, & Kentang Spiral Gurih</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-1.5 z-10">
+                  <button onclick="filterCategory('Minuman Cup 16 OZ')" class="px-2.5 py-1 bg-white text-brand-800 text-[11px] font-bold rounded-lg shadow-sm hover:bg-emerald-50 transition active:scale-95">
+                    Cup 16 OZ
                   </button>
-                  <button onclick="filterCategory('Kentang Spiral')" class="px-3.5 py-1.5 bg-brand-900/40 backdrop-blur-md text-white text-xs font-bold rounded-xl border border-white/30 hover:bg-brand-900/60 transition-all flex items-center gap-1.5 active:scale-95">
-                    <i class="fa-solid fa-tornado text-xs"></i>
-                    <span>Kentang Spiral</span>
+                  <button onclick="filterCategory('Kentang Spiral')" class="px-2.5 py-1 bg-brand-900/40 text-white text-[11px] font-bold rounded-lg border border-white/25 hover:bg-brand-900/60 transition active:scale-95">
+                    Spiral
+                  </button>
+                  <button onclick="togglePromoBanner()" class="p-1 text-emerald-200 hover:text-white transition ml-1" title="Sembunyikan Banner">
+                    <i class="fa-solid fa-chevron-up text-xs" id="bannerToggleIcon"></i>
                   </button>
                 </div>
               </div>
-              <div class="absolute right-2 -bottom-4 opacity-25 sm:opacity-40 pointer-events-none flex items-center justify-end text-8xl sm:text-9xl text-white">
-                <i class="fa-solid fa-mug-saucer"></i>
-              </div>
-            </div>
 
-            <!-- Search Bar -->
-            <div class="relative mb-3 shrink-0">
-              <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
-                <i class="fa-solid fa-magnifying-glass"></i>
-              </span>
-              <input type="text" id="posSearchInput" oninput="handleProductSearch(this.value)" placeholder="Cari nama menu / minuman / kentang..."
-                class="w-full pl-11 pr-12 py-3 bg-white rounded-2xl border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm transition">
-              <button onclick="clearSearch()" class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition">
-                <i class="fa-solid fa-circle-xmark"></i>
-              </button>
-            </div>
-
-            <!-- Categories Horizontal Slider -->
-            <div class="mb-4 shrink-0">
-              <div class="flex items-center justify-between mb-2">
-                <h4 class="font-bold text-slate-800 text-sm">Kategori Pilihan</h4>
-                <div class="flex items-center gap-2">
-                  <button onclick="openCategoryModal()" class="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 px-2.5 py-1 rounded-xl font-bold transition flex items-center gap-1 border border-brand-200">
-                    <i class="fa-solid fa-plus text-[10px]"></i> Kategori Baru
+              <!-- Bar Pencarian & Tombol Aksi Cepat -->
+              <div class="flex items-center gap-2">
+                <div class="relative flex-1">
+                  <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass text-xs sm:text-sm"></i>
+                  </span>
+                  <input type="text" id="posSearchInput" oninput="handleProductSearch(this.value)" placeholder="Cari nama menu / minuman / kentang..."
+                    class="w-full pl-9 pr-10 py-2 sm:py-2.5 bg-white rounded-xl border border-slate-200/90 shadow-xs focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent text-xs sm:text-sm transition">
+                  <button onclick="clearSearch()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition">
+                    <i class="fa-solid fa-circle-xmark text-xs"></i>
                   </button>
-                  <span class="text-xs text-brand-700 font-semibold cursor-pointer" onclick="filterCategory('All')">Semua</span>
+                </div>
+                <button onclick="openCategoryModal()" class="shrink-0 px-3 py-2 sm:py-2.5 bg-brand-50 hover:bg-brand-100 text-brand-700 rounded-xl text-xs font-bold border border-brand-200 flex items-center gap-1.5 transition active:scale-95">
+                  <i class="fa-solid fa-plus text-[10px]"></i>
+                  <span class="hidden sm:inline">Kategori</span>
+                </button>
+              </div>
+
+              <!-- Categories Horizontal Slider Bar -->
+              <div class="flex items-center justify-between gap-2">
+                <div id="categoryContainer" class="flex-1 flex gap-2 overflow-x-auto py-1 scrollbar-none">
+                  <!-- Diinjeksi oleh JS -->
+                </div>
+                <div class="shrink-0 flex items-center gap-1.5 pl-1 text-[11px] text-slate-500 font-semibold">
+                  <span id="productCountBadge" class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">0 item</span>
                 </div>
               </div>
-              <div id="categoryContainer" class="flex gap-2.5 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-none">
-                <!-- Diinjeksi oleh JS -->
-              </div>
+
             </div>
 
-            <!-- Header Section Produk -->
-            <div class="flex items-center justify-between mb-2 shrink-0">
-              <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                <span>Daftar Produk</span>
-                <span id="productCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 font-medium">0 item</span>
-              </h4>
-            </div>
-
-            <!-- Grid Produk (Scrollable) -->
-            <div class="flex-1 overflow-y-auto pr-1">
-              <div id="posProductsGrid" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-20 md:pb-6">
+            <!-- Area Grid Produk Layar Penuh (Full Viewport Scrollable) -->
+            <div class="flex-1 overflow-y-auto overscroll-contain pr-1 -mr-1">
+              <div id="posProductsGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2.5 sm:gap-3.5 pb-28 md:pb-12 pt-1">
                 <!-- Produk Card Diinjeksi JS -->
               </div>
-              <div id="emptyProductState" class="hidden text-center py-12">
+              <div id="emptyProductState" class="hidden text-center py-16">
                 <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 text-2xl mx-auto mb-3">
                   <i class="fa-solid fa-box-open"></i>
                 </div>
-                <p class="font-bold text-slate-700">Produk Tidak Ditemukan</p>
+                <p class="font-bold text-slate-700 text-sm">Produk Tidak Ditemukan</p>
                 <p class="text-xs text-slate-400 mt-1">Coba gunakan kata kunci pencarian yang lain.</p>
               </div>
             </div>
@@ -1079,13 +1080,13 @@
     const IS_PREVIEW = false;
 
     const firebaseConfig = {
-     apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
-  authDomain: "pos-umkm-santri.firebaseapp.com",
-  projectId: "pos-umkm-santri",
-  storageBucket: "pos-umkm-santri.firebasestorage.app",
-  messagingSenderId: "23516519899",
-  appId: "1:23516519899:web:2d85b0b7209f84998cdbfe",
-  measurementId: "G-6M4XKX0XBQ"
+     apiKey : "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w" , 
+  authDomain : "pos-umkm-santri.firebaseapp.com" , 
+  projectId : "pos-umkm-santri" , 
+  storageBucket : "pos-umkm-santri.firebasestorage.app" , 
+  messagingSenderId : "23516519899" , 
+  ID aplikasi : "1:23516519899:web:2d85b0b7209f84998cdbfe" , 
+  ID pengukuran : "G-6M4XKX0XBQ" 
     };
 
     // Firebase Imports
@@ -1194,6 +1195,21 @@
         qrisMerchantName: 'M.HABIBULLAH, PEKERJA KON',
         qrisNmid: 'ID1025434002255',
         qrisImageUrl: DEFAULT_QRIS_URL
+      }
+    };
+
+    // Fungsi Toggle Banner Promo untuk Layar Lebih Luas
+    window.togglePromoBanner = function() {
+      const banner = document.getElementById('promoBannerWrapper');
+      const icon = document.getElementById('bannerToggleIcon');
+      if (!banner) return;
+      
+      if (banner.classList.contains('hidden')) {
+        banner.classList.remove('hidden');
+        if (icon) icon.className = 'fa-solid fa-chevron-up text-xs';
+      } else {
+        banner.classList.add('hidden');
+        if (icon) icon.className = 'fa-solid fa-chevron-down text-xs';
       }
     };
 
@@ -1734,8 +1750,8 @@
         const isOutOfStock = item.stock <= 0;
         const isLowStock = item.stock > 0 && item.stock < 10;
         return `
-          <div class="card-hover-effect bg-white rounded-3xl p-3 sm:p-4 border border-slate-200/80 shadow-sm flex flex-col justify-between group relative overflow-hidden">
-            <span class="absolute top-3 right-3 text-[10px] font-bold px-2.5 py-0.5 rounded-full z-10 shadow-sm ${
+          <div class="card-hover-effect bg-white rounded-2xl p-2.5 sm:p-3 border border-slate-200/80 shadow-xs flex flex-col justify-between group relative overflow-hidden">
+            <span class="absolute top-2 right-2 text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full z-10 shadow-xs ${
               isOutOfStock 
                 ? 'bg-red-100 text-red-700 border border-red-200' 
                 : (isLowStock ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-brand-700 border border-emerald-200')
@@ -1743,7 +1759,7 @@
               ${isOutOfStock ? 'Habis' : (isLowStock ? `Sisa: ${item.stock}` : `Stok: ${item.stock}`)}
             </span>
 
-            <div class="w-full h-32 rounded-2xl bg-slate-50 overflow-hidden mb-3 relative flex items-center justify-center">
+            <div class="w-full h-24 sm:h-28 rounded-xl bg-slate-50 overflow-hidden mb-2 relative flex items-center justify-center">
               <img src="${item.imageUrl || `https://placehold.co/300x300/2d6a4f/ffffff?text=${encodeURIComponent(item.name)}`}" 
                    alt="${item.name}" 
                    loading="lazy"
@@ -1751,18 +1767,20 @@
                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
             </div>
 
-            <div>
-              <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">${item.category}</span>
-              <h5 class="font-bold text-slate-800 text-xs sm:text-sm line-clamp-1 mt-0.5">${item.name}</h5>
-              <div class="flex items-baseline gap-1 mt-1">
-                <span class="font-black text-slate-900 text-sm sm:text-base">Rp ${formatNumber(item.price)}</span>
+            <div class="flex-1 flex flex-col justify-between">
+              <div>
+                <span class="text-[9px] sm:text-[10px] uppercase font-bold text-slate-400 tracking-wider block truncate">${item.category}</span>
+                <h5 class="font-bold text-slate-800 text-xs sm:text-sm line-clamp-2 mt-0.5 leading-snug" title="${item.name}">${item.name}</h5>
+              </div>
+              <div class="flex items-baseline gap-1 mt-1.5">
+                <span class="font-black text-slate-900 text-xs sm:text-sm">Rp ${formatNumber(item.price)}</span>
                 <span class="text-[10px] text-slate-400 font-medium">/${item.unit || 'pcs'}</span>
               </div>
             </div>
 
             <button onclick="addToCart('${item.id}')" ${isOutOfStock ? 'disabled' : ''}
-              class="mt-3 w-full py-2.5 px-3 rounded-xl bg-brand-700 hover:bg-brand-800 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-xs shadow-md shadow-brand-700/20 transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
-              <i class="fa-solid fa-plus text-[11px]"></i>
+              class="mt-2.5 w-full py-2 px-2 rounded-xl bg-brand-700 hover:bg-brand-800 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-xs shadow-sm shadow-brand-700/20 transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer">
+              <i class="fa-solid fa-plus text-[10px]"></i>
               <span>${isOutOfStock ? 'Habis' : '+ Tambah'}</span>
             </button>
           </div>
