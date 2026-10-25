@@ -223,6 +223,11 @@
             <i class="fa-solid fa-cash-register text-base w-5 text-center"></i>
             <span>Kasir / POS</span>
           </button>
+          <button onclick="navigateTo('debts')" id="nav-debts" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm transition-colors text-slate-600 hover:bg-slate-100">
+            <i class="fa-solid fa-book-bookmark text-base w-5 text-center text-amber-600"></i>
+            <span class="flex-1 text-left">Buku Kasbon</span>
+            <span id="badgeUnpaidDebtsCount" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">0</span>
+          </button>
           <button onclick="navigateTo('products')" id="nav-products" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-medium text-sm transition-colors text-slate-600 hover:bg-slate-100">
             <i class="fa-solid fa-boxes-stacked text-base w-5 text-center"></i>
             <span>Kelola Produk</span>
@@ -550,6 +555,93 @@
           </div>
         </section>
 
+        <!-- ================= VIEW 5: BUKU KASBON / UTANG PELANGGAN ================= -->
+        <section id="view-debts" class="absolute inset-0 hidden flex-col overflow-y-auto p-4 sm:p-6 pb-24 md:pb-6">
+          <div class="max-w-6xl mx-auto w-full space-y-6">
+
+            <!-- Ringkasan Statistik Kasbon -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="bg-white p-5 rounded-3xl border border-red-100 shadow-sm flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center text-xl">
+                  <i class="fa-solid fa-hand-holding-dollar"></i>
+                </div>
+                <div>
+                  <p class="text-xs text-slate-400 font-medium">Sisa Piutang Belum Lunas</p>
+                  <h4 id="statTotalUnpaidDebt" class="text-lg sm:text-xl font-bold text-red-600">Rp 0</h4>
+                </div>
+              </div>
+
+              <div class="bg-white p-5 rounded-3xl border border-amber-100 shadow-sm flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl">
+                  <i class="fa-solid fa-users"></i>
+                </div>
+                <div>
+                  <p class="text-xs text-slate-400 font-medium">Pelanggan Belum Lunas</p>
+                  <h4 id="statCountUnpaidDebtors" class="text-lg sm:text-xl font-bold text-slate-800">0 Orang</h4>
+                </div>
+              </div>
+
+              <div class="bg-white p-5 rounded-3xl border border-emerald-100 shadow-sm flex items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl">
+                  <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div>
+                  <p class="text-xs text-slate-400 font-medium">Total Kasbon Terlunasi</p>
+                  <h4 id="statTotalPaidDebt" class="text-lg sm:text-xl font-bold text-emerald-700">Rp 0</h4>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabel Daftar Utang / Kasbon -->
+            <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+              <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="relative w-full sm:w-80">
+                  <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                    <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                  </span>
+                  <input type="text" id="debtSearchInput" oninput="filterDebtTable(this.value)" placeholder="Cari nama pelanggan / no. WA / invoice..."
+                    class="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500">
+                </div>
+
+                <!-- Filter Status Utang -->
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                  <button onclick="filterDebtStatus('all')" id="btnDebtFilter-all" class="debt-status-filter px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-700 text-white">Semua</button>
+                  <button onclick="filterDebtStatus('unpaid')" id="btnDebtFilter-unpaid" class="debt-status-filter px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200">Belum Lunas</button>
+                  <button onclick="filterDebtStatus('paid')" id="btnDebtFilter-paid" class="debt-status-filter px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200">Lunas</button>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="bg-slate-50 text-[11px] uppercase tracking-wider font-bold text-slate-500 border-b border-slate-100">
+                      <th class="py-3 px-4">Pelanggan</th>
+                      <th class="py-3 px-4">Invoice / Tanggal</th>
+                      <th class="py-3 px-4">Jatuh Tempo</th>
+                      <th class="py-3 px-4">Total Utang</th>
+                      <th class="py-3 px-4">Terbayar</th>
+                      <th class="py-3 px-4 font-bold text-red-600">Sisa Utang</th>
+                      <th class="py-3 px-4 text-center">Status</th>
+                      <th class="py-3 px-4 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="debtTableBody" class="divide-y divide-slate-100 text-xs">
+                    <!-- Data Kasbon Diinjeksi JS -->
+                  </tbody>
+                </table>
+              </div>
+              <div id="emptyDebtState" class="hidden text-center py-12">
+                <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-xl mx-auto mb-2">
+                  <i class="fa-solid fa-thumbs-up"></i>
+                </div>
+                <p class="font-bold text-slate-700 text-sm">Tidak Ada Catatan Utang</p>
+                <p class="text-xs text-slate-400 mt-0.5">Semua transaksi berjalan lancar tanpa kasbon.</p>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
         <!-- ================= VIEW 4: PENGATURAN TOKO & KASIR ================= -->
         <section id="view-settings" class="absolute inset-0 hidden flex-col overflow-y-auto p-4 sm:p-6 pb-24 md:pb-6">
           <div class="max-w-4xl mx-auto w-full space-y-6">
@@ -699,6 +791,11 @@
       <i class="fa-solid fa-cash-register text-lg"></i>
       <span class="text-[10px] mt-1">Kasir</span>
     </button>
+    <button onclick="navigateTo('debts')" id="m-nav-debts" class="flex flex-col items-center text-slate-400 font-medium transition relative">
+      <i class="fa-solid fa-book-bookmark text-lg"></i>
+      <span class="text-[10px] mt-1">Kasbon</span>
+      <span id="mBadgeUnpaidDebtsCount" class="hidden absolute -top-1 right-2 w-2 h-2 rounded-full bg-red-500"></span>
+    </button>
     <button onclick="navigateTo('products')" id="m-nav-products" class="flex flex-col items-center text-slate-400 font-medium transition">
       <i class="fa-solid fa-boxes-stacked text-lg"></i>
       <span class="text-[10px] mt-1">Produk</span>
@@ -780,10 +877,10 @@
       <!-- Pilihan Metode Pembayaran -->
       <div class="mb-5">
         <label class="block text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">Metode Pembayaran</label>
-        <div class="grid grid-cols-3 gap-2">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <button type="button" onclick="selectPaymentMethod('Tunai')" id="pm-Tunai" class="pm-btn py-3 px-2 rounded-xl border-2 border-brand-700 bg-brand-50 text-brand-700 font-bold text-xs flex flex-col items-center gap-1 transition">
             <i class="fa-solid fa-money-bill-wave text-base"></i>
-            <span>Tunai (Cash)</span>
+            <span>Tunai</span>
           </button>
           <button type="button" onclick="selectPaymentMethod('QRIS')" id="pm-QRIS" class="pm-btn py-3 px-2 rounded-xl border border-slate-200 text-slate-600 font-medium text-xs flex flex-col items-center gap-1 transition hover:bg-slate-50">
             <i class="fa-solid fa-qrcode text-base"></i>
@@ -791,7 +888,11 @@
           </button>
           <button type="button" onclick="selectPaymentMethod('Transfer')" id="pm-Transfer" class="pm-btn py-3 px-2 rounded-xl border border-slate-200 text-slate-600 font-medium text-xs flex flex-col items-center gap-1 transition hover:bg-slate-50">
             <i class="fa-solid fa-building-columns text-base"></i>
-            <span>Transfer Bank</span>
+            <span>Transfer</span>
+          </button>
+          <button type="button" onclick="selectPaymentMethod('Kasbon')" id="pm-Kasbon" class="pm-btn py-3 px-2 rounded-xl border border-slate-200 text-slate-600 font-medium text-xs flex flex-col items-center gap-1 transition hover:bg-slate-50">
+            <i class="fa-solid fa-hand-holding-dollar text-base text-amber-600"></i>
+            <span>Kasbon / BON</span>
           </button>
         </div>
       </div>
@@ -846,41 +947,110 @@
         <p class="text-[11px] text-slate-400">Pastikan notifikasi dana masuk telah diterima sebelum menyelesaikan transaksi</p>
       </div>
 
+      <!-- Area Kasbon / Utang Pelanggan -->
+      <div id="debtInputSection" class="hidden mb-5 p-4 bg-amber-50/70 rounded-2xl space-y-3 border border-amber-200">
+        <div class="flex items-center gap-2 text-amber-900 font-bold text-xs">
+          <i class="fa-solid fa-receipt text-amber-700"></i>
+          <span>Catatan Utang / BON Pelanggan</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Pelanggan (Wajib)</label>
+          <input type="text" id="debtCustomerName" placeholder="Contoh: Pak Haji Samsul / Bu Rina"
+            class="w-full px-3.5 py-2 rounded-xl border border-amber-200 bg-white text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">No. WhatsApp / HP</label>
+            <input type="tel" id="debtCustomerPhone" placeholder="08123456789"
+              class="w-full px-3.5 py-2 rounded-xl border border-amber-200 bg-white text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Jatuh Tempo (Opsional)</label>
+            <input type="date" id="debtDueDate"
+              class="w-full px-3 py-2 rounded-xl border border-amber-200 bg-white text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Uang Muka / DP Dibayar Sekarang (Rp)</label>
+          <input type="number" id="debtDownPayment" oninput="calculateDebtRemaining()" min="0" value="0"
+            class="w-full px-3.5 py-2 rounded-xl border border-amber-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+
+        <div class="p-3 bg-white rounded-xl border border-amber-200 text-xs space-y-1">
+          <div class="flex justify-between text-slate-600">
+            <span>Total Tagihan:</span>
+            <span id="debtSummaryTotal" class="font-bold text-slate-800">Rp 0</span>
+          </div>
+          <div class="flex justify-between text-red-600 font-bold">
+            <span>Sisa Utang Masuk Buku Kasbon:</span>
+            <span id="debtSummaryRemaining">Rp 0</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Tombol Aksi Selesai -->
-      <div class="flex gap-2">
-        <button onclick="closePaymentModal()" class="w-1/3 py-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition">
-          Batal
-        </button>
-        <button onclick="processFinalCheckout()" id="btnSubmitPayment" class="w-2/3 py-3 rounded-xl bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold shadow-lg shadow-brand-700/20 transition flex items-center justify-center gap-1.5">
-          <i class="fa-solid fa-check"></i>
-          <span>Selesaikan Transaksi</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= MODAL CETAK / LIHAT STRUK ================= -->
-  <div id="receiptModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 relative max-h-[92vh] flex flex-col">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-        <h3 class="font-bold text-slate-800 text-sm">Struk Pembayaran</h3>
-        <button onclick="closeReceiptModal()" class="w-7 h-7 rounded-full bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center">
-          <i class="fa-solid fa-xmark text-xs"></i>
+  <!-- ================= MODAL BAYAR / CICIL UTANG KASBON ================= -->
+  <div id="payDebtModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div>
+          <h3 class="font-bold text-slate-800 text-base">Pelunasan Utang BON</h3>
+          <p class="text-xs text-slate-500" id="payDebtCustomerSubtitle">Pelanggan</p>
+        </div>
+        <button onclick="closePayDebtModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
-      <div id="printReceiptArea" class="flex-1 overflow-y-auto p-4 bg-slate-50 rounded-2xl border border-dashed border-slate-300 font-mono text-[11px] leading-relaxed text-slate-700">
-        <!-- Konten Struk diinjeksi JS -->
+      <input type="hidden" id="payDebtTargetId">
+      
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 mb-4 text-xs space-y-1.5">
+        <div class="flex justify-between text-slate-600">
+          <span>Total Utang:</span>
+          <span id="payDebtTotalAmount" class="font-bold text-slate-800">Rp 0</span>
+        </div>
+        <div class="flex justify-between text-emerald-700">
+          <span>Sudah Dibayar:</span>
+          <span id="payDebtAlreadyPaid" class="font-semibold">Rp 0</span>
+        </div>
+        <div class="border-t border-amber-200 pt-1.5 flex justify-between font-bold text-red-600 text-sm">
+          <span>Sisa Utang:</span>
+          <span id="payDebtRemainingAmount">Rp 0</span>
+        </div>
       </div>
 
-      <div class="mt-4 flex gap-2">
-        <button onclick="window.print()" class="flex-1 py-2.5 bg-slate-900 hover:bg-black text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
-          <i class="fa-solid fa-print"></i> Cetak Struk
-        </button>
-        <button onclick="closeReceiptModal()" class="px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition">
-          Selesai
-        </button>
-      </div>
+      <form onsubmit="handleExecutePayDebt(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nominal Yang Dibayarkan Sekarang (Rp)</label>
+          <input type="number" id="payDebtNominalInput" required min="100"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <button type="button" onclick="setPayDebtFull()" class="mt-1.5 text-[11px] font-bold text-brand-700 hover:underline">
+            + Bayar Lunas Seluruhnya
+          </button>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Metode Penerimaan Uang</label>
+          <select id="payDebtMethodSelect" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white">
+            <option value="Tunai">Tunai (Cash)</option>
+            <option value="Transfer">Transfer Bank</option>
+            <option value="QRIS">QRIS</option>
+          </select>
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closePayDebtModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">
+            Batal
+          </button>
+          <button type="submit" class="flex-1 py-2.5 bg-brand-700 hover:bg-brand-800 text-white rounded-xl text-xs font-bold shadow-md shadow-brand-700/20 transition flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-check"></i>
+            <span>Simpan Pembayaran</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -1082,12 +1252,12 @@
     // Menggunakan konfigurasi resmi proyek Firebase pos-umkm-santri
     const firebaseConfig = {
       apiKey: "AIzaSyBTGYqtq1Br8bF2qLvJKA5apNtMBgXcw0w",
-      authDomain: "pos-umkm-santri.firebaseapp.com",
-      projectId: "pos-umkm-santri",
-      storageBucket: "pos-umkm-santri.firebasestorage.app",
-      messagingSenderId: "23516519899",
-      appId: "1:23516519899:web:5c655266dafc01cd8cdbfe",
-      measurementId: "G-2G02WFX88S"
+  authDomain: "pos-umkm-santri.firebaseapp.com",
+  projectId: "pos-umkm-santri",
+  storageBucket: "pos-umkm-santri.firebasestorage.app",
+  messagingSenderId: "23516519899",
+  appId: "1:23516519899:web:f34f2fd963a728038cdbfe",
+  measurementId: "G-N41CS0XN5W"
     };
 
     // Firebase Imports
@@ -1188,6 +1358,7 @@
       categories: [],
       products: [],
       transactions: [],
+      debts: [],
       cashiers: [],
       settings: {
         storeName: 'Kedai Segar Murah Enak',
@@ -1317,6 +1488,7 @@
       state.categories = [...initialCategories];
       state.products = [...initialDummyProducts];
       state.cashiers = [...initialDummyCashiers];
+      state.debts = [];
       state.transactions = [
         {
           id: 'TX-101',
@@ -1404,6 +1576,21 @@
         renderTransactions();
       }, (error) => {
         console.error("Gagal mendengarkan koleksi transactions:", error);
+      });
+
+      // 3.1 Utang Pelanggan (Buku Kasbon) Realtime
+      onSnapshot(collection(db, "debts"), (snapshot) => {
+        const dList = [];
+        snapshot.forEach(docSnap => dList.push({ id: docSnap.id, ...docSnap.data() }));
+        state.debts = dList.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+        renderDebts();
+      }, (error) => {
+        console.warn("Koleksi debts memerlukan update Security Rules di Firebase Console:", error.message);
+        // Fallback agar aplikasi kasir tetap berjalan lancar jika rules belum di-publish
+        if (!state.debts || state.debts.length === 0) {
+          state.debts = [];
+        }
+        renderDebts();
       });
 
       // 4. Kasir Realtime
@@ -1558,7 +1745,7 @@
     // NAVIGASI MENU
     // -------------------------------------------------------------
     window.navigateTo = function(targetView) {
-      const views = ['pos', 'products', 'transactions', 'settings'];
+      const views = ['pos', 'debts', 'products', 'transactions', 'settings'];
       views.forEach(v => {
         const el = document.getElementById(`view-${v}`);
         const nav = document.getElementById(`nav-${v}`);
@@ -1587,6 +1774,7 @@
 
       if (targetView === 'products') renderProductTable();
       if (targetView === 'transactions') renderTransactions();
+      if (targetView === 'debts') renderDebts();
     };
 
     // -------------------------------------------------------------
@@ -2014,17 +2202,31 @@
 
       const cashSec = document.getElementById('cashInputSection');
       const qrisSec = document.getElementById('qrisSection');
+      const debtSec = document.getElementById('debtInputSection');
+
+      cashSec.classList.add('hidden');
+      qrisSec.classList.add('hidden');
+      debtSec.classList.add('hidden');
 
       if (method === 'Tunai') {
         cashSec.classList.remove('hidden');
-        qrisSec.classList.add('hidden');
       } else if (method === 'QRIS') {
-        cashSec.classList.add('hidden');
         qrisSec.classList.remove('hidden');
-      } else {
-        cashSec.classList.add('hidden');
-        qrisSec.classList.add('hidden');
+      } else if (method === 'Kasbon') {
+        debtSec.classList.remove('hidden');
+        calculateDebtRemaining();
       }
+    };
+
+    window.calculateDebtRemaining = function() {
+      const subtotal = state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const grandTotal = Math.max(0, subtotal - state.discount);
+      const dpInput = document.getElementById('debtDownPayment');
+      const dp = Math.max(0, parseFloat(dpInput.value) || 0);
+      const remaining = Math.max(0, grandTotal - dp);
+
+      document.getElementById('debtSummaryTotal').innerText = `Rp ${formatNumber(grandTotal)}`;
+      document.getElementById('debtSummaryRemaining').innerText = `Rp ${formatNumber(remaining)}`;
     };
 
     function renderQuickCashButtons(total) {
@@ -2064,6 +2266,7 @@
       const subtotal = state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
       const grandTotal = Math.max(0, subtotal - state.discount);
       let cashReceived = grandTotal;
+      let debtRecord = null;
 
       if (state.paymentMethod === 'Tunai') {
         cashReceived = parseFloat(document.getElementById('cashReceivedInput').value) || 0;
@@ -2071,14 +2274,49 @@
           showToast('Nominal uang tunai yang diterima kurang!', 'error');
           return;
         }
+      } else if (state.paymentMethod === 'Kasbon') {
+        const custName = document.getElementById('debtCustomerName').value.trim();
+        const custPhone = document.getElementById('debtCustomerPhone').value.trim();
+        const dueDate = document.getElementById('debtDueDate').value;
+        const dp = Math.max(0, parseFloat(document.getElementById('debtDownPayment').value) || 0);
+
+        if (!custName) {
+          showToast('Nama pelanggan kasbon wajib diisi!', 'warning');
+          return;
+        }
+
+        if (dp > grandTotal) {
+          showToast('Uang muka (DP) tidak boleh melebihi total tagihan!', 'warning');
+          return;
+        }
+
+        const remainingDebt = grandTotal - dp;
+        cashReceived = dp;
+
+        debtRecord = {
+          id: 'DEBT-' + Date.now(),
+          invoiceNumber: state.activeInvoiceNumber,
+          customerName: custName,
+          customerPhone: custPhone || '-',
+          dueDate: dueDate || '-',
+          totalAmount: grandTotal,
+          paidAmount: dp,
+          remainingAmount: remainingDebt,
+          status: remainingDebt === 0 ? 'paid' : 'unpaid',
+          cashierName: state.currentUser ? state.currentUser.name : 'Kasir Toko',
+          createdAt: Date.now(),
+          date: new Date().toLocaleString('id-ID'),
+          payments: dp > 0 ? [{ amount: dp, date: new Date().toLocaleString('id-ID'), method: 'DP Kasbon' }] : []
+        };
       }
 
-      const change = cashReceived - grandTotal;
+      const change = state.paymentMethod === 'Kasbon' ? 0 : (cashReceived - grandTotal);
       const invoiceNo = state.activeInvoiceNumber;
       const transactionData = {
         id: 'TX-' + Date.now(),
         invoiceNumber: invoiceNo,
         cashierName: state.currentUser ? state.currentUser.name : 'Kasir Toko',
+        customerName: state.paymentMethod === 'Kasbon' ? (debtRecord ? debtRecord.customerName : '-') : '-',
         items: state.cart.map(c => ({
           name: c.name,
           price: c.price,
@@ -2111,6 +2349,14 @@
         setDoc(doc(db, "transactions", transactionData.id), transactionData).catch(console.error);
       }
 
+      // Simpan catatan Utang jika kasbon
+      if (debtRecord) {
+        state.debts.unshift(debtRecord);
+        if (db && isFirebaseConnected) {
+          setDoc(doc(db, "debts", debtRecord.id), debtRecord).catch(console.error);
+        }
+      }
+
       closePaymentModal();
       playSuccessSound();
 
@@ -2127,7 +2373,7 @@
         }
       }
 
-      showToast('Transaksi Berhasil Disimpan!', 'success');
+      showToast(state.paymentMethod === 'Kasbon' ? 'Transaksi Kasbon Berhasil Dicatat!' : 'Transaksi Berhasil Disimpan!', 'success');
       
       renderReceipt(transactionData);
       clearCart();
@@ -2135,6 +2381,247 @@
       renderProducts();
       renderProductTable();
       renderTransactions();
+      renderDebts();
+    };
+
+    // -------------------------------------------------------------
+    // FITUR UTANG PELANGGAN (BUKU KASBON)
+    // -------------------------------------------------------------
+    let debtStatusFilter = 'all';
+    let debtSearchQuery = '';
+
+    function renderDebts() {
+      const tbody = document.getElementById('debtTableBody');
+      const emptyState = document.getElementById('emptyDebtState');
+      const badgeUnpaid = document.getElementById('badgeUnpaidDebtsCount');
+      const mBadgeUnpaid = document.getElementById('mBadgeUnpaidDebtsCount');
+
+      const unpaidList = state.debts.filter(d => d.status === 'unpaid');
+      const unpaidCount = unpaidList.length;
+      const totalUnpaidAmount = unpaidList.reduce((sum, d) => sum + (d.remainingAmount || 0), 0);
+      const totalPaidAmount = state.debts.reduce((sum, d) => sum + (d.paidAmount || 0), 0);
+
+      document.getElementById('statTotalUnpaidDebt').innerText = `Rp ${formatNumber(totalUnpaidAmount)}`;
+      document.getElementById('statCountUnpaidDebtors').innerText = `${unpaidCount} Orang`;
+      document.getElementById('statTotalPaidDebt').innerText = `Rp ${formatNumber(totalPaidAmount)}`;
+
+      if (badgeUnpaid) {
+        if (unpaidCount > 0) {
+          badgeUnpaid.classList.remove('hidden');
+          badgeUnpaid.innerText = unpaidCount;
+        } else {
+          badgeUnpaid.classList.add('hidden');
+        }
+      }
+      if (mBadgeUnpaid) {
+        if (unpaidCount > 0) mBadgeUnpaid.classList.remove('hidden');
+        else mBadgeUnpaid.classList.add('hidden');
+      }
+
+      let filtered = state.debts.filter(d => {
+        const matchStatus = debtStatusFilter === 'all' || d.status === debtStatusFilter;
+        const matchQuery = !debtSearchQuery || 
+          d.customerName.toLowerCase().includes(debtSearchQuery) || 
+          (d.customerPhone && d.customerPhone.includes(debtSearchQuery)) ||
+          d.invoiceNumber.toLowerCase().includes(debtSearchQuery);
+        return matchStatus && matchQuery;
+      });
+
+      if (!tbody) return;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      tbody.innerHTML = filtered.map(d => {
+        const isLunas = d.status === 'paid';
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3 px-4">
+              <div class="font-bold text-slate-800 text-xs">${d.customerName}</div>
+              <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                <i class="fa-solid fa-phone text-[9px]"></i>
+                <span>${d.customerPhone}</span>
+              </div>
+            </td>
+            <td class="py-3 px-4">
+              <span class="font-bold text-brand-800 text-xs">${d.invoiceNumber}</span>
+              <div class="text-[10px] text-slate-400">${d.date}</div>
+            </td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-0.5 rounded-lg text-[10px] font-semibold ${d.dueDate !== '-' ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'text-slate-400'}">
+                ${d.dueDate !== '-' ? d.dueDate : 'Tidak Ada'}
+              </span>
+            </td>
+            <td class="py-3 px-4 font-bold text-slate-700">Rp ${formatNumber(d.totalAmount)}</td>
+            <td class="py-3 px-4 text-emerald-700 font-semibold">Rp ${formatNumber(d.paidAmount)}</td>
+            <td class="py-3 px-4 font-bold text-red-600">Rp ${formatNumber(d.remainingAmount)}</td>
+            <td class="py-3 px-4 text-center">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                isLunas ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-red-100 text-red-700 border border-red-200'
+              }">
+                ${isLunas ? 'Lunas' : 'Belum Lunas'}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-right space-x-1">
+              ${!isLunas ? `
+                <button onclick="openPayDebtModal('${d.id}')" class="px-2.5 py-1 bg-brand-700 hover:bg-brand-800 text-white rounded-lg text-[11px] font-bold shadow-xs transition" title="Bayar / Cicil Utang">
+                  <i class="fa-solid fa-money-bill-transfer mr-1"></i> Bayar
+                </button>
+                ${d.customerPhone && d.customerPhone !== '-' ? `
+                  <button onclick="sendDebtReminderWA('${d.id}')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold transition" title="Kirim Tagihan via WhatsApp">
+                    <i class="fa-brands fa-whatsapp"></i> Tagih
+                  </button>
+                ` : ''}
+              ` : `
+                <span class="text-xs text-emerald-600 font-bold px-2 py-1"><i class="fa-solid fa-check-double mr-1"></i>Selesai</span>
+              `}
+              <button onclick="deleteDebtRecord('${d.id}')" class="p-1.5 text-red-500 hover:bg-red-50 rounded-lg text-xs transition" title="Hapus Catatan Kasbon">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    window.filterDebtStatus = function(status) {
+      debtStatusFilter = status;
+      document.querySelectorAll('.debt-status-filter').forEach(btn => {
+        btn.className = "debt-status-filter px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200";
+      });
+      const activeBtn = document.getElementById(`btnDebtFilter-${status}`);
+      if (activeBtn) activeBtn.className = "debt-status-filter px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-700 text-white";
+      renderDebts();
+    };
+
+    window.filterDebtTable = function(txt) {
+      debtSearchQuery = txt.trim().toLowerCase();
+      renderDebts();
+    };
+
+    window.openPayDebtModal = function(debtId) {
+      const d = state.debts.find(item => item.id === debtId);
+      if (!d) return;
+
+      document.getElementById('payDebtTargetId').value = d.id;
+      document.getElementById('payDebtCustomerSubtitle').innerText = `${d.customerName} (${d.invoiceNumber})`;
+      document.getElementById('payDebtTotalAmount').innerText = `Rp ${formatNumber(d.totalAmount)}`;
+      document.getElementById('payDebtAlreadyPaid').innerText = `Rp ${formatNumber(d.paidAmount)}`;
+      document.getElementById('payDebtRemainingAmount').innerText = `Rp ${formatNumber(d.remainingAmount)}`;
+      document.getElementById('payDebtNominalInput').value = d.remainingAmount;
+
+      const m = document.getElementById('payDebtModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    };
+
+    window.closePayDebtModal = function() {
+      const m = document.getElementById('payDebtModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    };
+
+    window.setPayDebtFull = function() {
+      const dId = document.getElementById('payDebtTargetId').value;
+      const d = state.debts.find(item => item.id === dId);
+      if (d) {
+        document.getElementById('payDebtNominalInput').value = d.remainingAmount;
+      }
+    };
+
+    window.handleExecutePayDebt = async function(e) {
+      e.preventDefault();
+      const dId = document.getElementById('payDebtTargetId').value;
+      const payAmount = parseFloat(document.getElementById('payDebtNominalInput').value) || 0;
+      const method = document.getElementById('payDebtMethodSelect').value;
+
+      const d = state.debts.find(item => item.id === dId);
+      if (!d) return;
+
+      if (payAmount <= 0) {
+        showToast('Nominal pembayaran harus lebih besar dari 0!', 'warning');
+        return;
+      }
+
+      if (payAmount > d.remainingAmount) {
+        showToast(`Nominal pembayaran melebihi sisa utang (Rp ${formatNumber(d.remainingAmount)})!`, 'warning');
+        return;
+      }
+
+      d.paidAmount = (d.paidAmount || 0) + payAmount;
+      d.remainingAmount = Math.max(0, d.totalAmount - d.paidAmount);
+      d.status = d.remainingAmount === 0 ? 'paid' : 'unpaid';
+
+      if (!d.payments) d.payments = [];
+      d.payments.push({
+        amount: payAmount,
+        method: method,
+        date: new Date().toLocaleString('id-ID'),
+        cashier: state.currentUser ? state.currentUser.name : 'Kasir'
+      });
+
+      if (db && isFirebaseConnected) {
+        updateDoc(doc(db, "debts", d.id), {
+          paidAmount: d.paidAmount,
+          remainingAmount: d.remainingAmount,
+          status: d.status,
+          payments: d.payments
+        }).catch(console.error);
+      }
+
+      closePayDebtModal();
+      playSuccessSound();
+      showToast(d.status === 'paid' ? `Kasbon ${d.customerName} telah LUNAS!` : `Pembayaran cicilan Rp ${formatNumber(payAmount)} berhasil disimpan!`, 'success');
+      renderDebts();
+    };
+
+    window.sendDebtReminderWA = function(debtId) {
+      const d = state.debts.find(item => item.id === debtId);
+      if (!d || !d.customerPhone || d.customerPhone === '-') {
+        showToast('Nomor WhatsApp pelanggan tidak valid!', 'warning');
+        return;
+      }
+
+      let phone = d.customerPhone.replace(/[^0-9]/g, '');
+      if (phone.startsWith('0')) phone = '62' + phone.substring(1);
+
+      const msg = `Halo ${d.customerName}, ini pengingat dari *${state.settings.storeName}*.\n\n` +
+        `Catatan Kasbon / BON belanja:\n` +
+        `• No. Invoice: ${d.invoiceNumber}\n` +
+        `• Tanggal: ${d.date}\n` +
+        `• Total Belanja: Rp ${formatNumber(d.totalAmount)}\n` +
+        `• Sudah Dibayar: Rp ${formatNumber(d.paidAmount)}\n` +
+        `• *Sisa Utang Belum Lunas: Rp ${formatNumber(d.remainingAmount)}*\n` +
+        (d.dueDate !== '-' ? `• Jatuh Tempo: ${d.dueDate}\n` : '') +
+        `\nMohon untuk segera menyelesaikan pembayaran saat berkunjung kembali. Terima kasih! 🙏`;
+
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+    };
+
+    window.deleteDebtRecord = function(debtId) {
+      const d = state.debts.find(item => item.id === debtId);
+      const name = d ? d.customerName : 'Catatan kasbon ini';
+
+      openActionConfirm({
+        title: 'Hapus Catatan Kasbon?',
+        desc: `Yakin ingin menghapus catatan kasbon untuk "${name}"? Data ini tidak dapat dikembalikan.`,
+        btnText: 'Hapus Kasbon',
+        btnColor: 'bg-red-600 hover:bg-red-700 shadow-red-600/20',
+        icon: 'fa-trash-can',
+        onConfirm: () => {
+          state.debts = state.debts.filter(item => item.id !== debtId);
+          if (db && isFirebaseConnected) {
+            deleteDoc(doc(db, "debts", debtId)).catch(console.error);
+          }
+          renderDebts();
+          showToast('Catatan kasbon berhasil dihapus', 'info');
+        }
+      });
     };
 
     // -------------------------------------------------------------
